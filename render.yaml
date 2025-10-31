@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: ma-deals-backend
+    env: docker
+    plan: free
+    dockerfilePath: backend/Dockerfile
+    build:
+      docker:
+        buildArgs:
+          REQUIREMENTS_FILE: backend/requirements-min.txt
+    autoDeploy: true
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+    healthCheckPath: /health
+
+  - type: web
+    name: ma-deals-frontend
+    env: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npx serve -s dist -l 10000
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          name: ma-deals-backend
+          type: web
+          property: url
+    rootDir: frontend
+
+  - type: redis
+    name: ma-deals-redis
+    plan: free
+
+databases:
+  - name: ma-deals-postgres
+    plan: free
