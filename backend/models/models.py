@@ -43,7 +43,7 @@ class DealPair(Base):
 	acquirer_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True)
 	target_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True)
 	compatibility_score = Column(Float, index=True)
-	metadata = Column(JSON, nullable=True)
+	metadata_json = Column(JSON, nullable=True)
 
 	acquirer = relationship("Company", foreign_keys=[acquirer_id], back_populates="acquirer_pairs")
 	target = relationship("Company", foreign_keys=[target_id], back_populates="target_pairs")
@@ -53,13 +53,41 @@ class DealPair(Base):
 
 
 class Valuation(Base):
-	__tablename__ = "valuations"
+    __tablename__ = "valuations"
 
-	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-	pair_id = Column(UUID(as_uuid=True), ForeignKey("deal_pairs.id"), nullable=False, index=True)
-	dcf_value = Column(Float)
-	comps_value = Column(Float)
-	ensemble_value = Column(Float)
-	confidence_scores = Column(JSON)
-
-	pair = relationship("DealPair")
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    pair_id = Column(UUID(as_uuid=True), ForeignKey("deal_pairs.id"), nullable=False, index=True)
+    
+    # Different valuation methods
+    dcf_value = Column(Float)
+    comps_value = Column(Float)
+    precedent_value = Column(Float)
+    lbo_value = Column(Float)
+    ddm_value = Column(Float)
+    nav_value = Column(Float)
+    ensemble_value = Column(Float)
+    
+    # Confidence scores for each method
+    confidence_scores = Column(JSON)  # {method: score}
+    
+    # Model inputs and assumptions
+    dcf_assumptions = Column(JSON)  # growth rates, margins, wacc
+    comps_assumptions = Column(JSON)  # peer group, multiples
+    synergy_assumptions = Column(JSON)  # revenue/cost synergies
+    
+    # Sensitivity analysis
+    sensitivity_grid = Column(JSON)  # wacc vs growth matrix
+    scenario_analysis = Column(JSON)  # conservative/base/optimistic
+    
+    # Accretion/Dilution
+    accretion_analysis = Column(JSON)  # eps impact years 1-3
+    
+    # Deal rationale and narrative
+    strategic_rationale = Column(JSON)  # AI generated rationale
+    risk_factors = Column(JSON)  # Key risks and mitigations
+    
+    # Metadata
+    last_updated = Column(Float)  # timestamp
+    data_completeness = Column(JSON)  # missing data flags
+    
+    pair = relationship("DealPair")

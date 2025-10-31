@@ -1,10 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import './styles.css'
+import LoadingSpinner from './components/LoadingSpinner'
+
+interface ApiError {
+    message: string;
+    type?: string;
+}
 
 const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000'
 
 export default function App() {
 	const [health, setHealth] = useState<string>('checking…')
+
+	const [acquirer, setAcquirer] = useState<string>('')
+	const [top, setTop] = useState<number>(10)
+	const [pairs, setPairs] = useState<any[]>([])
+	const [loadingPairs, setLoadingPairs] = useState<boolean>(false)
+	const [generatingBrief, setGeneratingBrief] = useState<string | null>(null)
 
 	useEffect(() => {
 		fetch(`${apiBase}/health`).then(r => r.json()).then(j => setHealth(j.status || 'ok')).catch(() => setHealth('offline'))
@@ -15,7 +27,24 @@ export default function App() {
 	}
 
 	function onOpenScreener() {
-		alert('Screener coming next — backend endpoints will drive live rankings.')
+		// scroll to features which now include screener controls
+		window.location.hash = '#screener'
+	}
+
+	async function fetchPairs() {
+		if (!acquirer) return alert('Enter acquirer ticker (e.g., AAPL)')
+		setLoadingPairs(true)
+		try {
+			const resp = await fetch(`${apiBase}/pairs?acquirer=${encodeURIComponent(acquirer)}&top=${top}`)
+			if (!resp.ok) throw new Error(await resp.text())
+			const j = await resp.json()
+			setPairs(j.results || [])
+		} catch (e) {
+			console.error(e)
+			alert('Failed to fetch pairs: ' + e)
+		} finally {
+			setLoadingPairs(false)
+		}
 	}
 
 	return (
@@ -58,6 +87,44 @@ export default function App() {
 							<h3>Deal Brief Export</h3>
 							<p>Generate a polished PDF brief: strategic rationale, model breakdowns, and an auditable offer range.</p>
 						</div>
+					</div>
+				</section>
+
+				<section id="screener" className="section">
+					<div className="card">
+						<h3>Screener</h3>
+						<p>Enter an acquirer ticker to see top target suggestions generated from the current universe.</p>
+						<div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+							<input placeholder="ACQUIRER (e.g., AAPL)" value={acquirer} onChange={e => setAcquirer(e.target.value.toUpperCase())} />
+							<input type="number" value={top} onChange={e => setTop(Number(e.target.value || 10))} style={{ width: 80 }} />
+							<button className="btn primary" onClick={fetchPairs} disabled={loadingPairs}>{loadingPairs ? 'Loading…' : 'Get Top'}</button>
+						</div>
+						{pairs.length > 0 && (
+							<table style={{ width: '100%', marginTop: 12 }}>
+								<thead>
+									<tr>
+										<th>Rank</th>
+										<th>Ticker</th>
+										<th>Score</th>
+										<th>Actions</th>
+										<th>Name</th>
+										<th>Score</th>
+										<th>Market Cap</th>
+									</tr>
+								</thead>
+								<tbody>
+									{pairs.map((p, i) => (
+										<tr key={p.target}>
+											<td>{i + 1}</td>
+											<td>{p.target}</td>
+											<td>{p.target_name}</td>
+											<td>{p.score.toFixed(1)}</td>
+											<td>{p.target_market_cap ? (Number(p.target_market_cap).toLocaleString()) : '—'}</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						)}
 					</div>
 				</section>
 
