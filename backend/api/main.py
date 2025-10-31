@@ -5,16 +5,16 @@ from starlette.routing import Route
 from starlette.requests import Request
 from datetime import datetime
 import numpy as np
-from ..models.models import Company, Financial, DealPair, Valuation
-from ..pdf_generator import generate_deal_brief
-from ..valuation import (
+from backend.models.models import Company, Financial, DealPair, Valuation
+from backend.pdf_generator import generate_deal_brief
+from backend.valuation import (
     calculate_base_fcf,
     project_cash_flows,
     calculate_dcf_confidence,
     generate_dcf_sensitivity_grid,
     assess_data_completeness
 )
-from ..metrics import fetch_market_data
+from backend.metrics import fetch_market_data
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
